@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Upload, Save, Trash2, Route, Gauge, Bike, Info, SlidersHorizontal, MapPinned, Check, Lock, Unlock, FileText, Activity } from 'lucide-react';
+import { Upload, Save, Trash2, Route, Gauge, Bike, Info, SlidersHorizontal, MapPinned, Check, Lock, Unlock, FileText, Sparkles } from 'lucide-react';
 import './styles.css';
 
 const BAR_PER_PSI = 0.0689476;
@@ -73,6 +73,177 @@ const defaultSurfaces = {
   trail: '',
   unknown: '',
 };
+
+
+const commonTireWidths = ['25', '28', '30', '32', '35', '36', '38', '40', '42', '44', '45', '47', '48', '50', '55', '60'];
+
+const tireModels = {
+  unknown: {
+    label: 'Unknown / not listed',
+    family: 'Custom',
+    desc: 'Generic tire behavior. Use measured width if you know it.',
+    widths: commonTireWidths,
+    pressureFactor: 1.0,
+    behavior: 'Generic tire profile',
+  },
+  continental_gp5000_str: {
+    label: 'Continental Grand Prix 5000 S TR',
+    family: 'Road',
+    desc: 'Fast tubeless road tire.',
+    widths: ['25', '28', '30', '32', '35'],
+    pressureFactor: 0.98,
+    behavior: 'Fast road casing, small pressure reduction',
+  },
+  pirelli_pzero_race_tlr: {
+    label: 'Pirelli P Zero Race TLR',
+    family: 'Road',
+    desc: 'Performance tubeless road tire.',
+    widths: ['26', '28', '30', '32', '35'],
+    pressureFactor: 0.99,
+    behavior: 'Fast road casing',
+  },
+  schwalbe_pro_one_tle: {
+    label: 'Schwalbe Pro One TLE',
+    family: 'Road',
+    desc: 'Fast tubeless road tire.',
+    widths: ['25', '28', '30', '32', '34'],
+    pressureFactor: 0.98,
+    behavior: 'Fast road casing, small pressure reduction',
+  },
+  continental_terra_speed: {
+    label: 'Continental Terra Speed',
+    family: 'Gravel fast',
+    desc: 'Fast dry/light gravel tire with shallow tread.',
+    widths: ['35', '40', '45', '50'],
+    pressureFactor: 0.98,
+    behavior: 'Fast gravel casing, small pressure reduction',
+  },
+  continental_terra_trail: {
+    label: 'Continental Terra Trail',
+    family: 'Gravel all-round',
+    desc: 'All-round gravel tire with more grip than Terra Speed.',
+    widths: ['35', '40', '45', '50'],
+    pressureFactor: 1.0,
+    behavior: 'All-round gravel profile',
+  },
+  schwalbe_g_one_rs: {
+    label: 'Schwalbe G-One RS',
+    family: 'Gravel fast',
+    desc: 'Semi-slick race tire for hard surfaces.',
+    widths: ['35', '40', '45', '50', '55', '60'],
+    pressureFactor: 0.98,
+    behavior: 'Fast semi-slick gravel, small pressure reduction',
+  },
+  schwalbe_g_one_r: {
+    label: 'Schwalbe G-One R',
+    family: 'Gravel all-round',
+    desc: 'Race/all-round gravel tire.',
+    widths: ['35', '40', '45', '50'],
+    pressureFactor: 0.99,
+    behavior: 'Fast all-round gravel profile',
+  },
+  schwalbe_g_one_bite: {
+    label: 'Schwalbe G-One Bite',
+    family: 'Gravel rough',
+    desc: 'More bite for loose gravel and mixed surfaces.',
+    widths: ['40', '45', '50', '54'],
+    pressureFactor: 1.01,
+    behavior: 'More tread/support, small pressure increase',
+  },
+  pirelli_cinturato_gravel_h: {
+    label: 'Pirelli Cinturato Gravel H',
+    family: 'Gravel fast',
+    desc: 'Hard terrain / compact surface gravel tire.',
+    widths: ['35', '40', '45', '50'],
+    pressureFactor: 0.99,
+    behavior: 'Fast hardpack gravel profile',
+  },
+  pirelli_cinturato_gravel_m: {
+    label: 'Pirelli Cinturato Gravel M',
+    family: 'Gravel all-round',
+    desc: 'Mixed terrain gravel tire.',
+    widths: ['35', '40', '45', '50'],
+    pressureFactor: 1.0,
+    behavior: 'All-round mixed gravel profile',
+  },
+  tufo_speedero: {
+    label: 'TUFO Speedero',
+    family: 'Gravel fast',
+    desc: 'Fast hardpack/all-road gravel tire.',
+    widths: ['36', '40', '44', '48'],
+    pressureFactor: 0.99,
+    behavior: 'Fast hardpack gravel profile',
+  },
+  tufo_thundero: {
+    label: 'TUFO Thundero',
+    family: 'Gravel all-round',
+    desc: 'Universal gravel tire.',
+    widths: ['36', '40', '44', '48'],
+    pressureFactor: 1.0,
+    behavior: 'Universal gravel profile',
+  },
+  tufo_swampero: {
+    label: 'TUFO Swampero',
+    family: 'Gravel rough',
+    desc: 'More aggressive tire for loose and wet gravel.',
+    widths: ['36', '40', '44', '48'],
+    pressureFactor: 1.02,
+    behavior: 'Aggressive tread, small pressure increase',
+  },
+  vittoria_terreno_dry: {
+    label: 'Vittoria Terreno Dry',
+    family: 'Gravel fast',
+    desc: 'Fast dry gravel tread.',
+    widths: ['33', '35', '37', '40', '45', '47'],
+    pressureFactor: 0.99,
+    behavior: 'Fast dry gravel profile',
+  },
+  vittoria_terreno_mix: {
+    label: 'Vittoria Terreno Mix',
+    family: 'Gravel all-round',
+    desc: 'Mixed conditions gravel tire.',
+    widths: ['33', '35', '37', '40', '45', '47'],
+    pressureFactor: 1.0,
+    behavior: 'All-round mixed gravel profile',
+  },
+  specialized_pathfinder_pro: {
+    label: 'Specialized Pathfinder Pro',
+    family: 'Gravel fast',
+    desc: 'Semi-slick center tread for mixed road/gravel.',
+    widths: ['32', '38', '42', '47'],
+    pressureFactor: 0.99,
+    behavior: 'Fast semi-slick gravel profile',
+  },
+  panaracer_gravelking_ss: {
+    label: 'Panaracer GravelKing SS',
+    family: 'Gravel fast',
+    desc: 'Semi-slick gravel tire.',
+    widths: ['28', '32', '35', '38', '40', '43', '45', '50'],
+    pressureFactor: 0.99,
+    behavior: 'Fast semi-slick gravel profile',
+  },
+  panaracer_gravelking_sk: {
+    label: 'Panaracer GravelKing SK',
+    family: 'Gravel all-round',
+    desc: 'Small-knob all-round gravel tire.',
+    widths: ['32', '35', '38', '43', '45', '50'],
+    pressureFactor: 1.0,
+    behavior: 'All-round gravel profile',
+  },
+};
+
+function getTireWidthOptions(tireModelKey) {
+  return tireModels[tireModelKey]?.widths || commonTireWidths;
+}
+
+function tireModelGroups() {
+  return Object.entries(tireModels).reduce((groups, [key, item]) => {
+    const family = item.family || 'Other';
+    if (!groups[family]) groups[family] = [];
+    groups[family].push([key, item]);
+    return groups;
+  }, {});
+}
 
 const surfacePresets = {
   smooth_road: { paved: '98', hardpack: '', loose: '', trail: '', unknown: '2' },
@@ -791,7 +962,7 @@ function suggestRouteModeFromSurfaces(surfaces) {
   return 'mixed';
 }
 
-function calculatePressure({ totalWeight, tireWidth, setup, routeMode, goal, weightUnit, surfaces }) {
+function calculatePressure({ totalWeight, tireWidth, setup, routeMode, goal, weightUnit, surfaces, tireModel }) {
   const enteredWeight = Number(totalWeight);
   const weight = weightUnit === 'lb' ? enteredWeight / 2.20462 : enteredWeight;
   const width = Number(tireWidth);
@@ -799,6 +970,7 @@ function calculatePressure({ totalWeight, tireWidth, setup, routeMode, goal, wei
 
   const route = routeModes[routeMode] ?? routeModes.mixed;
   const tire = tireSetups[setup] ?? tireSetups.tubeless;
+  const profile = tireModels[tireModel] ?? tireModels.unknown;
   const g = goals[goal] ?? goals.balanced;
   const surfaceStats = getSurfaceStats(surfaces);
 
@@ -808,7 +980,7 @@ function calculatePressure({ totalWeight, tireWidth, setup, routeMode, goal, wei
   const rearLoadLbs = weight * 0.55 * 2.20462;
 
   const routeFactor = surfaceStats.hasManualSurfaces ? surfaceStats.factor : route.factor;
-  const totalFactor = routeFactor * tire.factor * g.center;
+  const totalFactor = routeFactor * tire.factor * g.center * (profile.pressureFactor || 1);
 
   let frontPsi = bertoPressurePsi(frontLoadLbs, width) * totalFactor;
   let rearPsi = bertoPressurePsi(rearLoadLbs, width) * totalFactor;
@@ -831,7 +1003,7 @@ function calculatePressure({ totalWeight, tireWidth, setup, routeMode, goal, wei
     },
   };
 
-  return { ...result, surfaceStats, routeFactorSource: surfaceStats.hasManualSurfaces ? 'surface mix' : 'route preset' };
+  return { ...result, surfaceStats, tireProfile: profile, routeFactorSource: surfaceStats.hasManualSurfaces ? 'surface mix' : 'route preset' };
 }
 
 function formatPressure(psi, pressureUnit) {
@@ -880,7 +1052,7 @@ function RouteAnalysisProgress({ flow, fileName, fileSize }) {
     <div className={`route-progress-card ${progress >= 100 ? 'complete' : ''}`}>
       <div className="route-progress-top">
         <div className="route-progress-title">
-          <span className="progress-orb"><Activity size={16} /></span>
+          <span className="progress-orb"><Sparkles size={16} /></span>
           <div>
             <strong>{flow.title || 'Analyzing route'}</strong>
             <p>{flow.subtitle || (fileName ? `${fileName}${fileSize ? ` · ${formatFileSize(fileSize)}` : ''}` : 'Preparing route data')}</p>
@@ -938,6 +1110,8 @@ async function fetchMapMatchedSurfaces(gpxXml) {
 function App() {
   const [totalWeight, setTotalWeight] = useState('95');
   const [tireWidth, setTireWidth] = useState('45');
+  const [tireModel, setTireModel] = useState('unknown');
+  const [customTireWidth, setCustomTireWidth] = useState(false);
   const [setup, setSetup] = useState('tubeless');
   const [routeMode, setRouteMode] = useState('mixed');
   const [goal, setGoal] = useState('balanced');
@@ -966,10 +1140,10 @@ function App() {
   }, []);
 
   const surfaceStats = useMemo(() => getSurfaceStats(surfaces), [surfaces]);
-  const pressure = useMemo(() => calculatePressure({ totalWeight, tireWidth, setup, routeMode, goal, weightUnit, surfaces }), [totalWeight, tireWidth, setup, routeMode, goal, weightUnit, surfaces]);
+  const pressure = useMemo(() => calculatePressure({ totalWeight, tireWidth, setup, routeMode, goal, weightUnit, surfaces, tireModel }), [totalWeight, tireWidth, setup, routeMode, goal, weightUnit, surfaces, tireModel]);
 
   function saveSetup() {
-    const item = { id: crypto.randomUUID(), name: setupName || 'Unnamed setup', totalWeight, weightUnit, tireWidth, setup, routeMode, goal, pressureUnit, surfaces };
+    const item = { id: crypto.randomUUID(), name: setupName || 'Unnamed setup', totalWeight, weightUnit, tireWidth, tireModel, customTireWidth, setup, routeMode, goal, pressureUnit, surfaces };
     const next = [item, ...savedSetups].slice(0, 8);
     setSavedSetups(next);
     localStorage.setItem('trailpsi-setups', JSON.stringify(next));
@@ -979,6 +1153,8 @@ function App() {
     setSetupName(item.name);
     setTotalWeight(item.totalWeight);
     setTireWidth(item.tireWidth);
+    setTireModel(item.tireModel || 'unknown');
+    setCustomTireWidth(Boolean(item.customTireWidth));
     setSetup(item.setup);
     setRouteMode(item.routeMode);
     setGoal(item.goal);
@@ -1015,6 +1191,29 @@ function App() {
 
   function clearSurfaceLocks() {
     setLockedSurfaces({});
+  }
+
+
+  function selectTireModel(key) {
+    const nextModel = tireModels[key] ? key : 'unknown';
+    setTireModel(nextModel);
+    const widths = getTireWidthOptions(nextModel);
+    setCustomTireWidth(false);
+    if (!widths.includes(String(tireWidth))) {
+      const numericWidths = widths.map((value) => Number(value)).filter(Number.isFinite);
+      const current = Number(tireWidth) || 45;
+      const closest = numericWidths.reduce((best, value) => Math.abs(value - current) < Math.abs(best - current) ? value : best, numericWidths[0] || current);
+      setTireWidth(String(closest));
+    }
+  }
+
+  function selectTireWidth(value) {
+    if (value === 'custom') {
+      setCustomTireWidth(true);
+      return;
+    }
+    setCustomTireWidth(false);
+    setTireWidth(value);
   }
 
   function selectRouteMode(key) {
@@ -1202,18 +1401,23 @@ function App() {
     }
   }
 
+
+  const selectedTireModel = tireModels[tireModel] || tireModels.unknown;
+  const tireWidthOptions = getTireWidthOptions(tireModel);
+  const selectedWidthValue = customTireWidth || !tireWidthOptions.includes(String(tireWidth)) ? 'custom' : String(tireWidth);
+  const tireGroups = tireModelGroups();
+
   return (
     <main>
       <section className="hero">
-        <div className="badge"><Bike size={16} /> Route-first tire pressure calculator</div>
         <h1>Route-aware tire pressure.</h1>
-        <p className="lead">Upload a GPX file, review the route surface estimate and get practical front and rear tire pressure ranges for your setup.</p>
+        <p className="lead">Upload a GPX file, analyze the route surface and get practical front and rear tire pressure ranges for your setup.</p>
       </section>
 
       <section className="app-grid">
         <div className="side-panel">
           <div className="card form-card compact-card">
-            <h2><Gauge size={20} /> 2. Bike setup</h2>
+            <h2><Gauge size={20} /> Bike setup</h2>
             <label>
               Total system weight
               <div className="input-with-toggle">
@@ -1227,10 +1431,33 @@ function App() {
             </label>
 
             <label>
-              Tire width
-              <input value={tireWidth} onChange={(e) => setTireWidth(e.target.value)} inputMode="decimal" />
-              <small>Use measured width if you know it. Otherwise use nominal width in mm.</small>
+              Tire model
+              <select value={tireModel} onChange={(e) => selectTireModel(e.target.value)}>
+                {Object.entries(tireGroups).map(([family, items]) => (
+                  <optgroup key={family} label={family}>
+                    {items.map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+              <small>{selectedTireModel.desc}</small>
             </label>
+
+            <label>
+              Tire width
+              <select value={selectedWidthValue} onChange={(e) => selectTireWidth(e.target.value)}>
+                {tireWidthOptions.map((width) => <option key={width} value={width}>{width} mm</option>)}
+                <option value="custom">Other / measured width</option>
+              </select>
+              {selectedWidthValue === 'custom' && (
+                <input className="inline-extra-input" value={tireWidth} onChange={(e) => setTireWidth(e.target.value)} inputMode="decimal" />
+              )}
+              <small>Use measured width if you know it. Tire model makes a small casing/tread adjustment.</small>
+            </label>
+
+            <div className="tire-profile-note">
+              <strong>{selectedTireModel.behavior}</strong>
+              <span>{selectedTireModel.pressureFactor === 1 ? 'No model-specific pressure adjustment.' : `${Math.round((selectedTireModel.pressureFactor - 1) * 100)}% model adjustment.`}</span>
+            </div>
 
             <label>
               Tire setup
@@ -1249,7 +1476,7 @@ function App() {
           </div>
 
           <div className="card result-card">
-            <h2>3. Pressure recommendation</h2>
+            <h2>Recommended range</h2>
             <div className="ride-feel">
               {Object.entries(goals).map(([key, item]) => (
                 <button key={key} type="button" className={goal === key ? 'feel-card active' : 'feel-card'} onClick={() => setGoal(key)}>
@@ -1273,7 +1500,7 @@ function App() {
                     <small>{formatRange(pressure.rear, pressureUnit)}</small>
                   </div>
                 </div>
-                <p className="note"><Info size={16} /> Start in the middle of the range and adjust by feel after the first ride. The recommendation is based on your setup and the analyzed surface mix.</p>
+                <p className="note"><Info size={16} /> Start in the middle of the range and adjust by feel after the first ride. The calculation uses the surface mix shown on the right.</p>
               </>
             ) : (
               <p>Enter total weight and tire width to calculate a range.</p>
@@ -1306,13 +1533,13 @@ function App() {
 
         <div className="main-panel">
           <div className="card route-card">
-            <h2><Upload size={20} /> 1. Upload and analyze your route</h2>
-            <p className="helper top-helper">Start with the route. TrailPSI reads your GPX, checks distance, climbing and surfaces, then uses that profile for the pressure recommendation.</p>
+            <h2><Upload size={20} /> Upload GPX or choose terrain type</h2>
+            <p className="helper top-helper">Upload a GPX for distance, climbing and route-shape analysis. Then run route surface analysis or choose a terrain preset manually.</p>
             <label className="upload-drop">
               <input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" onChange={handleGpx} />
               <span className="upload-icon"><Upload size={22} /></span>
-              <span className="upload-title">Drop your GPX route here or click to browse</span>
-              <span className="upload-copy">Distance, climbing and surfaces are used for the pressure recommendation.</span>
+              <span className="upload-title">Drop a GPX file here or click to browse</span>
+              <span className="upload-copy">TrailPSI reads distance and elevation locally, then can analyze surfaces through the route analysis endpoint.</span>
               {selectedFileMeta && <span className="file-chip"><FileText size={14} /> {selectedFileMeta.name} · {formatFileSize(selectedFileMeta.size)}</span>}
             </label>
             <RouteAnalysisProgress flow={routeFlow} fileName={selectedFileMeta?.name} fileSize={selectedFileMeta?.size} />
@@ -1336,17 +1563,17 @@ function App() {
                   </div>
                   <div className="route-analysis-copy">
                     <span className="eyebrow">Road surface analysis</span>
-                    <strong>Analyze the route surface</strong>
-                    <p className="muted">Match your GPX against route data to estimate paved, gravel and trail sections. The pressure range updates from this surface mix.</p>
+                    <strong>Analyze the route before calculating pressure</strong>
+                    <p className="muted">TrailPSI checks the GPX against openrouteservice road data and estimates how much of the ride is paved, gravel, rough surface, trail or unknown.</p>
                     <div className="analysis-mini-steps">
                       <span>Match route</span>
-                      <span>Estimate surfaces</span>
+                      <span>Read surfaces</span>
                       <span>Update pressure</span>
                     </div>
                   </div>
                   <button type="button" className="primary analyze-button" onClick={handleOsmSurfaceAnalysis} disabled={isSurfaceAnalyzing}>
                     <MapPinned size={18} />
-                    <span>{isSurfaceAnalyzing ? 'Analyzing route...' : 'Analyze route surfaces'}</span>
+                    <span>{isSurfaceAnalyzing ? 'Analyzing route...' : 'Analyze road surfaces'}</span>
                   </button>
                 </div>
                 {osmStatus && (
@@ -1364,7 +1591,7 @@ function App() {
             )}
 
             <h3><Route size={18} /> Terrain preset</h3>
-            <p className="helper">No GPX? Choose the closest terrain type. You can also use a preset to override the route estimate.</p>
+            <p className="helper">Choose a preset if you do not upload a GPX or if you want to manually override the route estimate. Presets fill the surface mix below.</p>
             <div className="mode-grid">
               {Object.entries(routeModes).map(([key, item]) => (
                 <button key={key} className={routeMode === key ? 'selected' : ''} onClick={() => selectRouteMode(key)}>
@@ -1450,7 +1677,7 @@ function App() {
       </section>
 
       <section className="disclaimer">
-        <strong>Important:</strong> TrailPSI gives practical starting pressures based on route, surface, tire setup and ride feel. Always stay within tire and rim manufacturer limits. Lower pressure improves comfort and grip but increases the risk of rim strikes, burping and pinch flats.
+        <strong>Important:</strong> This MVP uses a practical 15% tire-drop style baseline with route, surface, tire setup and ride-feel modifiers. It gives starting pressures, not a certified engineering value. Always stay within tire and rim manufacturer limits. Lower pressure improves comfort and grip but increases the risk of rim strikes, burping and pinch flats.
       </section>
     </main>
   );
