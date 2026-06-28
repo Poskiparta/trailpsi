@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Upload, Save, Trash2, Route, Gauge, Bike, Info, SlidersHorizontal, MapPinned, Check, Lock, Unlock, FileText, Sparkles } from 'lucide-react';
+import { Upload, Save, Trash2, Route, Gauge, Bike, Info, SlidersHorizontal, MapPinned, Check, Lock, Unlock, FileText, Activity } from 'lucide-react';
 import './styles.css';
 
 const BAR_PER_PSI = 0.0689476;
@@ -880,7 +880,7 @@ function RouteAnalysisProgress({ flow, fileName, fileSize }) {
     <div className={`route-progress-card ${progress >= 100 ? 'complete' : ''}`}>
       <div className="route-progress-top">
         <div className="route-progress-title">
-          <span className="progress-orb"><Sparkles size={16} /></span>
+          <span className="progress-orb"><Activity size={16} /></span>
           <div>
             <strong>{flow.title || 'Analyzing route'}</strong>
             <p>{flow.subtitle || (fileName ? `${fileName}${fileSize ? ` · ${formatFileSize(fileSize)}` : ''}` : 'Preparing route data')}</p>
@@ -1205,15 +1205,15 @@ function App() {
   return (
     <main>
       <section className="hero">
-        <div className="badge"><Bike size={16} /> Trail-aware MVP</div>
-        <h1>TrailPSI</h1>
-        <p className="lead">A route-aware tire pressure calculator for road, gravel and bikepacking. Upload a GPX file, review the surface mix and get practical front and rear pressure ranges for your setup.</p>
+        <div className="badge"><Bike size={16} /> Route-first tire pressure calculator</div>
+        <h1>Route-aware tire pressure.</h1>
+        <p className="lead">Upload a GPX file, review the route surface estimate and get practical front and rear tire pressure ranges for your setup.</p>
       </section>
 
       <section className="app-grid">
         <div className="side-panel">
           <div className="card form-card compact-card">
-            <h2><Gauge size={20} /> Bike setup</h2>
+            <h2><Gauge size={20} /> 2. Bike setup</h2>
             <label>
               Total system weight
               <div className="input-with-toggle">
@@ -1249,7 +1249,7 @@ function App() {
           </div>
 
           <div className="card result-card">
-            <h2>Recommended range</h2>
+            <h2>3. Pressure recommendation</h2>
             <div className="ride-feel">
               {Object.entries(goals).map(([key, item]) => (
                 <button key={key} type="button" className={goal === key ? 'feel-card active' : 'feel-card'} onClick={() => setGoal(key)}>
@@ -1273,7 +1273,7 @@ function App() {
                     <small>{formatRange(pressure.rear, pressureUnit)}</small>
                   </div>
                 </div>
-                <p className="note"><Info size={16} /> Start in the middle of the range and adjust by feel after the first ride. The calculation uses the surface mix shown on the right.</p>
+                <p className="note"><Info size={16} /> Start in the middle of the range and adjust by feel after the first ride. The recommendation is based on your setup and the analyzed surface mix.</p>
               </>
             ) : (
               <p>Enter total weight and tire width to calculate a range.</p>
@@ -1306,13 +1306,13 @@ function App() {
 
         <div className="main-panel">
           <div className="card route-card">
-            <h2><Upload size={20} /> Upload GPX or choose terrain type</h2>
-            <p className="helper top-helper">Upload a GPX for distance, climbing and route-shape analysis. Then run route surface analysis or choose a terrain preset manually.</p>
+            <h2><Upload size={20} /> 1. Upload and analyze your route</h2>
+            <p className="helper top-helper">Start with the route. TrailPSI reads your GPX, checks distance, climbing and surfaces, then uses that profile for the pressure recommendation.</p>
             <label className="upload-drop">
               <input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" onChange={handleGpx} />
               <span className="upload-icon"><Upload size={22} /></span>
-              <span className="upload-title">Drop a GPX file here or click to browse</span>
-              <span className="upload-copy">TrailPSI reads distance and elevation locally, then can analyze surfaces through the route analysis endpoint.</span>
+              <span className="upload-title">Drop your GPX route here or click to browse</span>
+              <span className="upload-copy">Distance, climbing and surfaces are used for the pressure recommendation.</span>
               {selectedFileMeta && <span className="file-chip"><FileText size={14} /> {selectedFileMeta.name} · {formatFileSize(selectedFileMeta.size)}</span>}
             </label>
             <RouteAnalysisProgress flow={routeFlow} fileName={selectedFileMeta?.name} fileSize={selectedFileMeta?.size} />
@@ -1336,17 +1336,17 @@ function App() {
                   </div>
                   <div className="route-analysis-copy">
                     <span className="eyebrow">Road surface analysis</span>
-                    <strong>Analyze the route before calculating pressure</strong>
-                    <p className="muted">TrailPSI checks the GPX against openrouteservice road data and estimates how much of the ride is paved, gravel, rough surface, trail or unknown.</p>
+                    <strong>Analyze the route surface</strong>
+                    <p className="muted">Match your GPX against route data to estimate paved, gravel and trail sections. The pressure range updates from this surface mix.</p>
                     <div className="analysis-mini-steps">
                       <span>Match route</span>
-                      <span>Read surfaces</span>
+                      <span>Estimate surfaces</span>
                       <span>Update pressure</span>
                     </div>
                   </div>
                   <button type="button" className="primary analyze-button" onClick={handleOsmSurfaceAnalysis} disabled={isSurfaceAnalyzing}>
                     <MapPinned size={18} />
-                    <span>{isSurfaceAnalyzing ? 'Analyzing route...' : 'Analyze road surfaces'}</span>
+                    <span>{isSurfaceAnalyzing ? 'Analyzing route...' : 'Analyze route surfaces'}</span>
                   </button>
                 </div>
                 {osmStatus && (
@@ -1364,7 +1364,7 @@ function App() {
             )}
 
             <h3><Route size={18} /> Terrain preset</h3>
-            <p className="helper">Choose a preset if you do not upload a GPX or if you want to manually override the route estimate. Presets fill the surface mix below.</p>
+            <p className="helper">No GPX? Choose the closest terrain type. You can also use a preset to override the route estimate.</p>
             <div className="mode-grid">
               {Object.entries(routeModes).map(([key, item]) => (
                 <button key={key} className={routeMode === key ? 'selected' : ''} onClick={() => selectRouteMode(key)}>
@@ -1450,7 +1450,7 @@ function App() {
       </section>
 
       <section className="disclaimer">
-        <strong>Important:</strong> This MVP uses a practical 15% tire-drop style baseline with route, surface, tire setup and ride-feel modifiers. It gives starting pressures, not a certified engineering value. Always stay within tire and rim manufacturer limits. Lower pressure improves comfort and grip but increases the risk of rim strikes, burping and pinch flats.
+        <strong>Important:</strong> TrailPSI gives practical starting pressures based on route, surface, tire setup and ride feel. Always stay within tire and rim manufacturer limits. Lower pressure improves comfort and grip but increases the risk of rim strikes, burping and pinch flats.
       </section>
     </main>
   );

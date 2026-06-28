@@ -1,6 +1,6 @@
 # TrailPSI
 
-Route-aware tire pressure calculator with GPX upload.
+Route-first tire pressure calculator. Upload a GPX, analyze the route surfaces, then calculate practical pressure ranges for road, gravel and bikepacking.
 
 ## Local development
 
