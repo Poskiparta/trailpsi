@@ -1,0 +1,18 @@
+{
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:vite": "vite --host 0.0.0.0",
+    "dev:api": "node scripts/api-dev-server.mjs",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node tests/mapmatch-test.mjs && node tests/route-analysis-test.mjs /mnt/data/HERO_2026.gpx && node tests/route-analysis-test.mjs \"/mnt/data/7S26_1 - Slovenia.gpx\" && node tests/no-hang-test.mjs"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "lucide-react": "latest"
+  },
+  "devDependencies": {}
+}
