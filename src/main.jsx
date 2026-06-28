@@ -3133,7 +3133,7 @@ function App() {
     <main>
       <section className="hero">
         <h1>Bike Route Analyzer</h1>
-        <p className="lead">Upload a GPX file, check the route surface mix, and get practical front and rear pressure ranges for your setup.</p>
+        <p className="lead">Analyze your route and calculate practical tire pressures for road, gravel and mixed terrain.</p>
       </section>
 
       <section className="app-grid">
