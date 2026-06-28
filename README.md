@@ -1,39 +1,25 @@
-# TrailPSI
+# tinyglobby
 
-Route-first tire pressure calculator. Upload a GPX, analyze the route surfaces, then calculate practical pressure ranges for road, gravel and bikepacking.
+[![npm version](https://img.shields.io/npm/v/tinyglobby.svg?maxAge=3600)](https://npmjs.com/package/tinyglobby)
+[![weekly downloads](https://img.shields.io/npm/dw/tinyglobby.svg?maxAge=3600)](https://npmjs.com/package/tinyglobby)
 
-## Local development
+A fast and minimal alternative to globby and fast-glob, meant to behave the same way.
 
-1. Install dependencies:
+Both globby and fast-glob present some behavior no other globbing lib has,
+which makes it hard to manually replace with something smaller and better.
 
-```bash
-npm install
+This library uses only two subdependencies, compared to `globby`'s [23](https://npmgraph.js.org/?q=globby@16.2.0)
+and `fast-glob`'s [17](https://npmgraph.js.org/?q=fast-glob@3.3.3).
+
+## Usage
+
+```js
+import { glob, globSync } from 'tinyglobby';
+
+await glob(['files/*.ts', '!**/*.d.ts'], { cwd: 'src' });
+globSync('src/**/*.ts', { ignore: '**/*.d.ts' });
 ```
 
-2. Add an openrouteservice API key:
+## Documentation
 
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` and set:
-
-```bash
-ORS_API_KEY=...
-```
-
-3. Start the app and local API server:
-
-```bash
-npm run dev
-```
-
-Open the Vite URL shown in Terminal.
-
-## GPX surface analysis
-
-TrailPSI sends the GPX to `/api/analyze-gpx`, which calls openrouteservice directions with `extra_info=surface`. The backend samples the GPX into route points, asks openrouteservice to route through those points, and summarizes the returned surface distances.
-
-This is not pure map matching, but it is more robust than the old browser-only Overpass/nearby-way heuristic and does not require GraphHopper Map Matching access.
-
-Without `ORS_API_KEY`, distance and elevation still work locally, but surface analysis will show a configuration error.
+Visit https://superchupu.dev/tinyglobby to read the full documentation.
