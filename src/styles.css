@@ -663,3 +663,178 @@ button:disabled {
   font-size: 13px;
   font-weight: 650;
 }
+
+/* Searchable tire selector */
+.tire-picker {
+  position: relative;
+  width: 100%;
+}
+
+.tire-picker-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+  border: 1px solid rgba(18, 34, 27, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 16px;
+  padding: 13px 14px;
+  color: #12221b;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.tire-picker-trigger:hover {
+  border-color: rgba(18, 34, 27, 0.28);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.tire-picker-trigger strong {
+  display: block;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.tire-picker-trigger small {
+  display: block;
+  margin-top: 3px;
+  color: #65736b;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.tire-picker-caret {
+  flex: 0 0 auto;
+  color: #65736b;
+  font-size: 1.25rem;
+}
+
+.tire-picker-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: min(72vh, 620px);
+  border: 1px solid rgba(18, 34, 27, 0.18);
+  border-radius: 18px;
+  background: #fffdf7;
+  box-shadow: 0 24px 60px rgba(18, 34, 27, 0.22);
+  overflow: hidden;
+}
+
+.tire-picker-search-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(18, 34, 27, 0.10);
+  background: rgba(247, 243, 233, 0.96);
+}
+
+.tire-picker-search-row input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(18, 34, 27, 0.16);
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  background: white;
+}
+
+.tire-picker-search-row button {
+  border: 1px solid rgba(18, 34, 27, 0.16);
+  background: white;
+  border-radius: 12px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.tire-picker-meta {
+  padding: 9px 13px;
+  color: #65736b;
+  font-size: 0.82rem;
+  border-bottom: 1px solid rgba(18, 34, 27, 0.08);
+}
+
+.tire-picker-list {
+  max-height: min(58vh, 470px);
+  overflow: auto;
+  padding: 8px;
+}
+
+.tire-picker-group-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 9px 6px;
+  color: #12221b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #fffdf7;
+}
+
+.tire-picker-option {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 9px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: #12221b;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tire-picker-option:hover {
+  background: rgba(18, 34, 27, 0.06);
+}
+
+.tire-picker-option.selected {
+  background: rgba(20, 105, 73, 0.12);
+}
+
+.tire-picker-option strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.tire-picker-option small {
+  display: block;
+  color: #65736b;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  margin-top: 2px;
+}
+
+.tire-picker-widths {
+  color: #65736b;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.tire-picker-empty {
+  padding: 20px;
+  color: #65736b;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .tire-picker-popover {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    top: 76px;
+    max-height: calc(100vh - 110px);
+  }
+
+  .tire-picker-list {
+    max-height: calc(100vh - 230px);
+  }
+}

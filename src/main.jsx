@@ -682,6 +682,416 @@ const tireModels = {
     pressureFactor: 1.0,
     behavior: 'All-round XC profile',
   },
+
+  // Additional road / all-road / gravel / XC presets
+  continental_gp5000_tt_tr: {
+    label: 'Continental Grand Prix 5000 TT TR',
+    family: 'Road race',
+    desc: 'Race-day road tire profile.',
+    widths: ['25', '28', '30'],
+    pressureFactor: 0.97,
+    behavior: 'Very fast road casing, small pressure reduction',
+  },
+  vittoria_corsa_pro_speed: {
+    label: 'Vittoria Corsa Pro Speed TLR',
+    family: 'Road race',
+    desc: 'Very fast race road tire profile.',
+    widths: ['24', '26', '28'],
+    pressureFactor: 0.97,
+    behavior: 'Very supple race road casing, small pressure reduction',
+  },
+  pirelli_pzero_race_rs_tlr: {
+    label: 'Pirelli P Zero Race RS TLR',
+    family: 'Road race',
+    desc: 'Fast race road tire profile.',
+    widths: ['26', '28', '30', '32'],
+    pressureFactor: 0.98,
+    behavior: 'Fast road casing, small pressure reduction',
+  },
+  hutchinson_blackbird_racing_lab: {
+    label: 'Hutchinson Blackbird Racing Lab TLR',
+    family: 'Road race',
+    desc: 'Fast road race tire profile.',
+    widths: ['26', '28', '30'],
+    pressureFactor: 0.98,
+    behavior: 'Fast road casing, small pressure reduction',
+  },
+  specialized_mondo: {
+    label: 'Specialized S-Works Mondo',
+    family: 'Road endurance',
+    desc: 'Endurance road tire profile.',
+    widths: ['28', '30', '32', '35'],
+    pressureFactor: 1.0,
+    behavior: 'Endurance road profile',
+  },
+  vittoria_rubino_pro_tlr: {
+    label: 'Vittoria Rubino Pro TLR',
+    family: 'Road endurance',
+    desc: 'Durable road training tire profile.',
+    widths: ['25', '28', '30', '32'],
+    pressureFactor: 1.01,
+    behavior: 'Durable road casing, small pressure increase',
+  },
+  goodyear_vector_4seasons_tlr: {
+    label: 'Goodyear Vector 4Seasons Tubeless',
+    family: 'Road endurance',
+    desc: 'All-season endurance road tire profile.',
+    widths: ['25', '28', '30', '32'],
+    pressureFactor: 1.01,
+    behavior: 'Protected endurance casing, small pressure increase',
+  },
+  michelin_power_adventure: {
+    label: 'Michelin Power Adventure',
+    family: 'All-road endurance',
+    desc: 'All-road tire profile for road and light gravel.',
+    widths: ['30', '36', '42', '48'],
+    pressureFactor: 1.0,
+    behavior: 'All-road profile',
+  },
+  schwalbe_g_one_overland: {
+    label: 'Schwalbe G-One Overland',
+    family: 'All-road endurance',
+    desc: 'Durable all-road/gravel tire profile.',
+    widths: ['40', '45', '50'],
+    pressureFactor: 1.02,
+    behavior: 'Durable all-road casing, small pressure increase',
+  },
+  specialized_sawtooth: {
+    label: 'Specialized Sawtooth',
+    family: 'Touring / bikepacking',
+    desc: 'All-road touring and bikepacking tire profile.',
+    widths: ['38', '42', '47'],
+    pressureFactor: 1.03,
+    behavior: 'Durable adventure casing, pressure support increased',
+  },
+  teravail_sparwood: {
+    label: 'Teravail Sparwood',
+    family: 'Touring / bikepacking',
+    desc: 'Bikepacking / adventure tire profile.',
+    widths: ['58', '60', '62'],
+    pressureFactor: 1.02,
+    behavior: 'Durable bikepacking profile',
+  },
+  continental_terra_hardpack: {
+    label: 'Continental Terra Hardpack',
+    family: 'Gravel fast',
+    desc: 'Fast hardpack gravel tire profile.',
+    widths: ['40', '45', '50'],
+    pressureFactor: 0.99,
+    behavior: 'Fast hardpack gravel profile',
+  },
+  vittoria_terreno_zero: {
+    label: 'Vittoria Terreno Zero',
+    family: 'Gravel fast',
+    desc: 'Slick/semi-slick gravel tire profile.',
+    widths: ['32', '35', '38', '40', '45', '47'],
+    pressureFactor: 0.99,
+    behavior: 'Fast slick gravel profile',
+  },
+  panaracer_gravelking_slick: {
+    label: 'Panaracer GravelKing Slick',
+    family: 'Gravel fast',
+    desc: 'Slick all-road/gravel tire profile.',
+    widths: ['28', '32', '35', '38', '40', '43', '45', '50'],
+    pressureFactor: 0.99,
+    behavior: 'Fast slick all-road profile',
+  },
+  panaracer_gravelking_plus: {
+    label: 'Panaracer GravelKing Plus',
+    family: 'Gravel all-round',
+    desc: 'More protected GravelKing profile.',
+    widths: ['32', '35', '38', '43', '45', '50'],
+    pressureFactor: 1.02,
+    behavior: 'Protected gravel casing, small pressure increase',
+  },
+  panaracer_gravelking_ext: {
+    label: 'Panaracer GravelKing EXT',
+    family: 'Gravel rough',
+    desc: 'Wet/loose gravel profile.',
+    widths: ['33', '35', '38', '43'],
+    pressureFactor: 1.02,
+    behavior: 'Aggressive gravel profile',
+  },
+  schwalbe_g_one_ultrabite: {
+    label: 'Schwalbe G-One Ultrabite',
+    family: 'Gravel rough',
+    desc: 'Aggressive gravel tread profile.',
+    widths: ['40', '45', '50'],
+    pressureFactor: 1.03,
+    behavior: 'Aggressive tread, pressure support increased',
+  },
+  schwalbe_g_one_speed: {
+    label: 'Schwalbe G-One Speed',
+    family: 'Gravel fast',
+    desc: 'Fast all-road/gravel tire profile.',
+    widths: ['30', '35', '40', '50', '60'],
+    pressureFactor: 0.99,
+    behavior: 'Fast low-tread gravel profile',
+  },
+  pirelli_cinturato_gravel_rc: {
+    label: 'Pirelli Cinturato Gravel RC',
+    family: 'Gravel fast',
+    desc: 'Fast race gravel tire profile.',
+    widths: ['35', '40', '45'],
+    pressureFactor: 0.99,
+    behavior: 'Fast gravel race profile',
+  },
+  pirelli_cinturato_gravel_s: {
+    label: 'Pirelli Cinturato Gravel S',
+    family: 'Gravel rough',
+    desc: 'Soft/loose condition gravel tire profile.',
+    widths: ['40', '45', '50'],
+    pressureFactor: 1.03,
+    behavior: 'Aggressive gravel profile',
+  },
+  tufo_thundero_hd: {
+    label: 'TUFO Thundero HD',
+    family: 'Gravel all-round',
+    desc: 'More durable Thundero-style gravel profile.',
+    widths: ['40', '44', '48'],
+    pressureFactor: 1.02,
+    behavior: 'Durable all-round gravel profile',
+  },
+  tufo_gravelero: {
+    label: 'TUFO Gravelero',
+    family: 'Gravel all-round',
+    desc: 'Mixed gravel tire profile.',
+    widths: ['36', '40', '44', '48'],
+    pressureFactor: 1.0,
+    behavior: 'All-round gravel profile',
+  },
+  challenge_almanzo: {
+    label: 'Challenge Almanzo',
+    family: 'Gravel fast',
+    desc: 'Fast all-road/gravel tire profile.',
+    widths: ['33', '36', '40'],
+    pressureFactor: 0.99,
+    behavior: 'Fast gravel profile',
+  },
+  challenge_gravel_grinder_pro: {
+    label: 'Challenge Gravel Grinder Pro',
+    family: 'Gravel all-round',
+    desc: 'Mixed-surface gravel tire profile.',
+    widths: ['33', '36', '40', '42', '46'],
+    pressureFactor: 0.99,
+    behavior: 'Fast mixed gravel profile',
+  },
+  rene_herse_extralight_slick: {
+    label: 'Rene Herse slick / extralight casing',
+    family: 'Gravel fast',
+    desc: 'Very supple all-road/gravel profile.',
+    widths: ['32', '35', '38', '42', '44', '48', '55'],
+    pressureFactor: 0.96,
+    behavior: 'Very supple casing, small pressure reduction',
+  },
+  rene_herse_endurance_plus: {
+    label: 'Rene Herse endurance plus casing',
+    family: 'Touring / bikepacking',
+    desc: 'More protected all-road/bikepacking profile.',
+    widths: ['38', '42', '44', '48', '55'],
+    pressureFactor: 1.02,
+    behavior: 'Protected casing, small pressure increase',
+  },
+  wtb_exposure: {
+    label: 'WTB Exposure',
+    family: 'All-road endurance',
+    desc: 'All-road tire profile for road and rough pavement.',
+    widths: ['30', '34', '36'],
+    pressureFactor: 1.0,
+    behavior: 'All-road profile',
+  },
+  wtb_vulpine: {
+    label: 'WTB Vulpine',
+    family: 'Gravel fast',
+    desc: 'Fast gravel tire profile.',
+    widths: ['36', '40', '45', '50'],
+    pressureFactor: 0.99,
+    behavior: 'Fast gravel profile',
+  },
+  wtb_nano: {
+    label: 'WTB Nano',
+    family: 'Gravel rough',
+    desc: 'Classic rough gravel tire profile.',
+    widths: ['40'],
+    pressureFactor: 1.02,
+    behavior: 'Aggressive gravel profile',
+  },
+  wtb_sendero: {
+    label: 'WTB Sendero',
+    family: 'Gravel rough',
+    desc: 'High-grip gravel tire profile.',
+    widths: ['47'],
+    pressureFactor: 1.03,
+    behavior: 'Aggressive gravel profile',
+  },
+  teravail_ehline: {
+    label: 'Teravail Ehline',
+    family: 'Bikepacking / XC',
+    desc: 'Fast trail/XC bikepacking tire profile.',
+    widths: ['55', '57', '60', '62'],
+    pressureFactor: 1.0,
+    behavior: 'Fast trail/XC profile',
+  },
+  teravail_honcho: {
+    label: 'Teravail Honcho',
+    family: 'Bikepacking / XC',
+    desc: 'Trail bikepacking tire profile.',
+    widths: ['57', '60', '62'],
+    pressureFactor: 1.02,
+    behavior: 'Trail/XC profile, small pressure increase',
+  },
+  hutchinson_overide: {
+    label: 'Hutchinson Overide',
+    family: 'Gravel fast',
+    desc: 'Fast all-road/gravel tire profile.',
+    widths: ['35', '38', '40', '45'],
+    pressureFactor: 0.99,
+    behavior: 'Fast all-road profile',
+  },
+  hutchinson_tundra: {
+    label: 'Hutchinson Tundra',
+    family: 'Gravel rough',
+    desc: 'Rough gravel tire profile.',
+    widths: ['40', '45', '50'],
+    pressureFactor: 1.02,
+    behavior: 'Aggressive gravel profile',
+  },
+  irc_boken_doublecross: {
+    label: 'IRC Boken Doublecross',
+    family: 'Gravel rough',
+    desc: 'Rough gravel / cyclocross-style profile.',
+    widths: ['33', '38', '42'],
+    pressureFactor: 1.02,
+    behavior: 'Grippy mixed profile',
+  },
+  irc_boken_plus: {
+    label: 'IRC Boken Plus',
+    family: 'Gravel all-round',
+    desc: 'Durable mixed gravel profile.',
+    widths: ['36', '40', '42', '47', '50'],
+    pressureFactor: 1.01,
+    behavior: 'Durable all-round gravel profile',
+  },
+  maxxis_velocita_ar: {
+    label: 'Maxxis Velocita AR',
+    family: 'Gravel fast',
+    desc: 'Fast all-road/gravel slick profile.',
+    widths: ['40', '50'],
+    pressureFactor: 0.99,
+    behavior: 'Fast slick all-road profile',
+  },
+  maxxis_refuse: {
+    label: 'Maxxis Re-Fuse',
+    family: 'All-road endurance',
+    desc: 'Durable all-road/endurance profile.',
+    widths: ['32', '40', '47'],
+    pressureFactor: 1.03,
+    behavior: 'Durable all-road casing, pressure support increased',
+  },
+  kenda_happy_medium: {
+    label: 'Kenda Happy Medium Pro',
+    family: 'Gravel fast',
+    desc: 'Fast semi-slick gravel profile.',
+    widths: ['35', '40'],
+    pressureFactor: 0.99,
+    behavior: 'Fast semi-slick profile',
+  },
+  kenda_booster_pro: {
+    label: 'Kenda Booster Pro',
+    family: 'Bikepacking / XC',
+    desc: 'Fast XC tire profile.',
+    widths: ['55', '57', '60'],
+    pressureFactor: 1.0,
+    behavior: 'Fast XC profile',
+  },
+  continental_race_king: {
+    label: 'Continental Race King',
+    family: 'Bikepacking / XC',
+    desc: 'Fast XC and bikepacking tire profile.',
+    widths: ['55', '57', '60'],
+    pressureFactor: 0.99,
+    behavior: 'Fast XC profile',
+  },
+  continental_cross_king: {
+    label: 'Continental Cross King',
+    family: 'Bikepacking / XC',
+    desc: 'All-round XC tire profile.',
+    widths: ['55', '57', '60', '62'],
+    pressureFactor: 1.01,
+    behavior: 'All-round XC profile',
+  },
+  schwalbe_rocket_ron: {
+    label: 'Schwalbe Rocket Ron',
+    family: 'Bikepacking / XC',
+    desc: 'Light XC tire profile.',
+    widths: ['54', '57', '60', '62'],
+    pressureFactor: 1.0,
+    behavior: 'Fast XC profile',
+  },
+  schwalbe_wicked_will: {
+    label: 'Schwalbe Wicked Will',
+    family: 'Bikepacking / XC',
+    desc: 'Downcountry/trail bikepacking profile.',
+    widths: ['57', '60', '62'],
+    pressureFactor: 1.02,
+    behavior: 'Trail/XC profile, small pressure increase',
+  },
+  maxxis_ardent_race: {
+    label: 'Maxxis Ardent Race',
+    family: 'Bikepacking / XC',
+    desc: 'Fast trail/XC tire profile.',
+    widths: ['57', '60', '62'],
+    pressureFactor: 1.01,
+    behavior: 'Fast trail/XC profile',
+  },
+  maxxis_rekon: {
+    label: 'Maxxis Rekon',
+    family: 'Bikepacking / XC',
+    desc: 'All-round trail/XC tire profile.',
+    widths: ['57', '60', '62'],
+    pressureFactor: 1.02,
+    behavior: 'Trail/XC profile, small pressure increase',
+  },
+  specialized_fast_trak: {
+    label: 'Specialized Fast Trak',
+    family: 'Bikepacking / XC',
+    desc: 'Fast XC tire profile.',
+    widths: ['55', '57', '60'],
+    pressureFactor: 1.0,
+    behavior: 'Fast XC profile',
+  },
+  specialized_renegade: {
+    label: 'Specialized Renegade',
+    family: 'Bikepacking / XC',
+    desc: 'Very fast XC tire profile.',
+    widths: ['55', '57', '60'],
+    pressureFactor: 0.99,
+    behavior: 'Very fast XC profile',
+  },
+  vittoria_peyote: {
+    label: 'Vittoria Peyote XC',
+    family: 'Bikepacking / XC',
+    desc: 'Fast XC tire profile.',
+    widths: ['55', '57', '60', '62'],
+    pressureFactor: 0.99,
+    behavior: 'Fast XC profile',
+  },
+  pirelli_scorpion_xc_rc: {
+    label: 'Pirelli Scorpion XC RC',
+    family: 'Bikepacking / XC',
+    desc: 'Race XC tire profile.',
+    widths: ['55', '57', '60'],
+    pressureFactor: 0.99,
+    behavior: 'Fast XC race profile',
+  },
+  pirelli_scorpion_xc_m: {
+    label: 'Pirelli Scorpion XC M',
+    family: 'Bikepacking / XC',
+    desc: 'Mixed terrain XC tire profile.',
+    widths: ['55', '57', '60', '62'],
+    pressureFactor: 1.01,
+    behavior: 'All-round XC profile',
+  },
 };
 
 function getTireWidthOptions(tireModelKey) {
@@ -1559,6 +1969,80 @@ async function fetchMapMatchedSurfaces(gpxXml) {
   }
 }
 
+
+function TireModelSelector({ value, onChange, models }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const selected = models[value] || models.unknown;
+  const normalizedQuery = query.trim().toLowerCase();
+  const matches = Object.entries(models).filter(([key, item]) => {
+    if (!normalizedQuery) return true;
+    return `${item.label} ${item.family} ${item.desc}`.toLowerCase().includes(normalizedQuery);
+  });
+  const grouped = matches.reduce((groups, [key, item]) => {
+    const family = item.family || 'Other';
+    if (!groups[family]) groups[family] = [];
+    groups[family].push([key, item]);
+    return groups;
+  }, {});
+  const modelCount = Object.keys(models).length - 1;
+
+  function choose(key) {
+    onChange(key);
+    setOpen(false);
+    setQuery('');
+  }
+
+  return (
+    <div className="tire-picker">
+      <button type="button" className="tire-picker-trigger" onClick={() => setOpen((current) => !current)} aria-expanded={open}>
+        <span>
+          <strong>{selected.label}</strong>
+          <small>{selected.family} · {selected.behavior}</small>
+        </span>
+        <span className="tire-picker-caret">⌄</span>
+      </button>
+
+      {open && (
+        <div className="tire-picker-popover">
+          <div className="tire-picker-search-row">
+            <input
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search tire model or brand..."
+            />
+            <button type="button" onClick={() => { setOpen(false); setQuery(''); }}>Close</button>
+          </div>
+          <div className="tire-picker-meta">{modelCount} tire presets. Choose “Unknown / not listed” if your tire is missing.</div>
+          <div className="tire-picker-list">
+            {Object.keys(grouped).length === 0 && <div className="tire-picker-empty">No matching tire. Use Unknown / not listed or measured width.</div>}
+            {Object.entries(grouped).map(([family, items]) => (
+              <div className="tire-picker-group" key={family}>
+                <div className="tire-picker-group-title">{family}</div>
+                {items.map(([key, item]) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className={`tire-picker-option ${key === value ? 'selected' : ''}`}
+                    onClick={() => choose(key)}
+                  >
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.desc}</small>
+                    </span>
+                    <span className="tire-picker-widths">{item.widths.slice(0, 5).join('/')} mm{item.widths.length > 5 ? '+' : ''}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [totalWeight, setTotalWeight] = useState('95');
   const [tireWidth, setTireWidth] = useState('45');
@@ -1884,13 +2368,7 @@ function App() {
 
             <label>
               Tire model
-              <select value={tireModel} onChange={(e) => selectTireModel(e.target.value)}>
-                {Object.entries(tireGroups).map(([family, items]) => (
-                  <optgroup key={family} label={family}>
-                    {items.map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}
-                  </optgroup>
-                ))}
-              </select>
+              <TireModelSelector value={tireModel} onChange={selectTireModel} models={tireModels} />
               <small>{selectedTireModel.desc}</small>
             </label>
 
