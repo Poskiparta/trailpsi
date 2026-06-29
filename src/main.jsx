@@ -3069,19 +3069,27 @@ function App() {
     }));
 
     try {
-      const analysis = await fetchAndAnalyzeOverpassSurfaces(gpx.points, (completed, total) => {
-        const percent = Math.round((completed / Math.max(1, total)) * 100);
-        setOsmProgress(percent);
-        const flowProgress = Math.min(96, 72 + Math.round(percent * 0.24));
-        setOsmStatus(`Analyzing route surfaces from OpenStreetMap... ${percent}% complete.`);
-        setRouteFlow(makeFlow({
-          progress: flowProgress,
-          current: 'surfaces',
-          completed: ['upload', 'parse', 'elevation'],
-          title: 'Analyzing route surfaces',
-          subtitle: `${completed}/${total} route sections checked from OpenStreetMap`,
-        }));
-      }, surfaces);
+      const progressTimer = window.setInterval(() => {
+        setOsmProgress((current) => {
+          const next = Math.min(92, Number(current || 0) + 3);
+          const flowProgress = Math.min(96, 72 + Math.round(next * 0.24));
+          setOsmStatus(`Analyzing route surfaces from OpenStreetMap... ${next}% complete.`);
+          setRouteFlow(makeFlow({
+            progress: flowProgress,
+            current: 'surfaces',
+            completed: ['upload', 'parse', 'elevation'],
+            title: 'Analyzing route surfaces',
+            subtitle: 'Checking nearby OpenStreetMap roads and paths on the server',
+          }));
+          return next;
+        });
+      }, 900);
+      let analysis;
+      try {
+        analysis = await fetchMapMatchedSurfaces(gpx.xml);
+      } finally {
+        window.clearInterval(progressTimer);
+      }
 
       const nextSurfaces = cleanSurfaceMix(Object.fromEntries(
         Object.entries(analysis.percentages).map(([key, value]) => [key, String(Math.round(value))])
@@ -3092,7 +3100,7 @@ function App() {
       if (gpxSignature) setCachedOsmByGpx((current) => ({ ...current, [gpxSignature]: analysis }));
       const suggested = suggestRouteModeFromSurfaces(nextSurfaces);
       if (suggested) setRouteMode(suggested);
-      setSurfaceSource('OpenStreetMap GPX-nearby road/path analysis');
+      setSurfaceSource('OpenStreetMap / Overpass server analysis');
       setOsmProgress(100);
       setRouteFlow(makeFlow({
         progress: 100,

@@ -279,29 +279,187 @@ async function analyzeWithOpenRouteService(points, profile, apiKey) {
   };
 }
 
+
+// OpenStreetMap / Overpass backend analysis. This replaces the ORS dependency for production.
+function normalizeOsmValue(value) {
+  return String(value || '').toLowerCase().trim().replaceAll(' ', '_');
+}
+
+function classifyOsmWay(tags = {}) {
+  const surface = normalizeOsmValue(tags.surface);
+  const highway = normalizeOsmValue(tags.highway);
+  const tracktype = normalizeOsmValue(tags.tracktype);
+  const smoothness = normalizeOsmValue(tags.smoothness);
+
+  const paved = new Set(['paved', 'asphalt', 'concrete', 'concrete:lanes', 'concrete:plates', 'paving_stones', 'sett', 'cobblestone']);
+  const hardpack = new Set(['compacted', 'fine_gravel', 'gravel', 'chipseal', 'crushed_limestone']);
+  const loose = new Set(['unpaved', 'ground', 'earth', 'dirt', 'mud', 'sand', 'grass', 'pebblestone', 'rock']);
+
+  if (paved.has(surface)) return { key: 'paved', explicit: true };
+  if (hardpack.has(surface)) return { key: 'hardpack', explicit: true };
+  if (loose.has(surface)) return { key: highway === 'path' ? 'trail' : 'loose', explicit: true };
+  if (['grade1'].includes(tracktype)) return { key: 'hardpack', explicit: true };
+  if (['grade2', 'grade3'].includes(tracktype)) return { key: 'hardpack', explicit: true };
+  if (['grade4', 'grade5'].includes(tracktype)) return { key: 'loose', explicit: true };
+  if (['bad', 'very_bad', 'horrible', 'very_horrible'].includes(smoothness)) return { key: 'loose', explicit: true };
+
+  if (['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified', 'service', 'living_street', 'cycleway', 'road'].includes(highway)) return { key: 'paved', explicit: false };
+  if (highway === 'track') return { key: 'hardpack', explicit: false };
+  if (['path', 'bridleway', 'footway'].includes(highway)) return { key: 'trail', explicit: false };
+  return { key: 'unknown', explicit: false };
+}
+
+function metersProject(point, origin) {
+  const latMeters = 111320;
+  const lonMeters = 111320 * Math.cos((origin.lat * Math.PI) / 180);
+  return { x: (point.lon - origin.lon) * lonMeters, y: (point.lat - origin.lat) * latMeters };
+}
+
+function pointToSegmentMeters(point, start, end) {
+  const p = metersProject(point, point);
+  const a = metersProject(start, point);
+  const b = metersProject(end, point);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const denom = dx * dx + dy * dy;
+  if (!denom) return Math.hypot(p.x - a.x, p.y - a.y);
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / denom));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+function waySegmentsFromElements(elements = []) {
+  const segments = [];
+  for (const way of elements) {
+    if (way.type !== 'way' || !Array.isArray(way.geometry) || way.geometry.length < 2) continue;
+    const classification = classifyOsmWay(way.tags || {});
+    for (let i = 1; i < way.geometry.length; i += 1) {
+      segments.push({
+        start: { lat: way.geometry[i - 1].lat, lon: way.geometry[i - 1].lon },
+        end: { lat: way.geometry[i].lat, lon: way.geometry[i].lon },
+        classification,
+      });
+    }
+  }
+  return segments;
+}
+
+function chooseClassForPoint(point, segments) {
+  const nearby = segments.map((segment) => ({
+    distance: pointToSegmentMeters(point, segment.start, segment.end),
+    classification: segment.classification,
+  })).filter((item) => item.distance <= 55).sort((a, b) => a.distance - b.distance);
+
+  if (!nearby.length) return { key: 'unknown', matched: false };
+  const nearest = nearby[0];
+  const explicitUnpaved = nearby.find((item) => item.classification.explicit && item.classification.key !== 'paved' && item.distance <= 35);
+  const explicitPaved = nearby.find((item) => item.classification.explicit && item.classification.key === 'paved' && item.distance <= 35);
+  const implicitPaved = nearby.find((item) => !item.classification.explicit && item.classification.key === 'paved' && item.distance <= 45);
+  const implicitUnpaved = nearby.find((item) => !item.classification.explicit && item.classification.key !== 'paved' && item.classification.key !== 'unknown' && item.distance <= 40);
+
+  if (explicitUnpaved && (!explicitPaved || explicitUnpaved.distance + 10 < explicitPaved.distance)) return { ...explicitUnpaved.classification, matched: true };
+  if (explicitPaved && (!explicitUnpaved || explicitPaved.distance <= explicitUnpaved.distance + 10)) return { ...explicitPaved.classification, matched: true };
+  if (implicitUnpaved && (!implicitPaved || implicitUnpaved.distance + 14 < implicitPaved.distance)) return { ...implicitUnpaved.classification, matched: true };
+  if (nearest.classification.key !== 'unknown') return { ...nearest.classification, matched: true };
+  return { key: 'unknown', matched: false };
+}
+
+function makeOverpassQuery(points) {
+  const pad = 0.0022;
+  const lats = points.map((p) => p.lat);
+  const lons = points.map((p) => p.lon);
+  const south = Math.min(...lats) - pad;
+  const north = Math.max(...lats) + pad;
+  const west = Math.min(...lons) - pad;
+  const east = Math.max(...lons) + pad;
+  return `[out:json][timeout:9];(way["highway"](${south.toFixed(6)},${west.toFixed(6)},${north.toFixed(6)},${east.toFixed(6)}););out tags geom;`;
+}
+
+async function fetchOverpass(points, timeoutMs = 9500) {
+  const endpoints = [
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
+  ];
+  let lastError;
+  for (const endpoint of endpoints) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(new Error('OpenStreetMap request timed out')), timeoutMs);
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: new URLSearchParams({ data: makeOverpassQuery(points) }).toString(),
+      });
+      const text = await response.text();
+      if (!response.ok) throw new Error(`OpenStreetMap request failed (${response.status})`);
+      return JSON.parse(text);
+    } catch (err) {
+      lastError = err;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  throw lastError || new Error('OpenStreetMap analysis failed.');
+}
+
+function osmPercentagesFromCounts(counts) {
+  const keys = ['paved', 'hardpack', 'loose', 'trail', 'unknown'];
+  const total = keys.reduce((sum, key) => sum + (counts[key] || 0), 0);
+  if (!total) return { paved: 0, hardpack: 0, loose: 0, trail: 0, unknown: 100 };
+  const percentages = Object.fromEntries(keys.map((key) => [key, Math.round(((counts[key] || 0) / total) * 1000) / 10]));
+  const sum = keys.reduce((acc, key) => acc + percentages[key], 0);
+  percentages.unknown = Math.round((percentages.unknown + (100 - sum)) * 10) / 10;
+  return percentages;
+}
+
+async function analyzeWithOpenStreetMap(points) {
+  const sampled = samplePointsForRouting(points);
+  const chunks = chunkPoints(sampled, 28).slice(0, 18);
+  const counts = { paved: 0, hardpack: 0, loose: 0, trail: 0, unknown: 0 };
+  let successfulChunks = 0;
+  let failedChunks = 0;
+  for (const chunk of chunks) {
+    try {
+      const data = await fetchOverpass(chunk);
+      const segments = waySegmentsFromElements(data.elements || []);
+      for (const point of chunk) {
+        const chosen = chooseClassForPoint(point, segments);
+        counts[chosen.key || 'unknown'] += 1;
+      }
+      successfulChunks += 1;
+    } catch (_err) {
+      failedChunks += 1;
+      for (const _point of chunk) counts.unknown += 1;
+    }
+  }
+  const percentages = osmPercentagesFromCounts(counts);
+  const unknown = Number(percentages.unknown) || 0;
+  return {
+    percentages,
+    sampledPoints: sampled.length,
+    chunkCount: chunks.length,
+    completedChunks: chunks.length,
+    successfulChunks,
+    failedChunks,
+    confidence: successfulChunks === 0 ? 'low' : unknown <= 15 ? 'medium' : 'low',
+  };
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return sendJson(res, 405, { error: 'Use POST.' });
-  const apiKey = process.env.ORS_API_KEY || process.env.OPENROUTESERVICE_API_KEY;
-  if (!apiKey) {
-    return sendJson(res, 501, {
-      error: 'ORS_API_KEY is missing. Add it to .env.local or your Vercel environment variables.',
-    });
-  }
 
   try {
     const body = await readJsonBody(req);
     const gpxXml = body.gpxXml;
-    const profile = body.profile || 'bike';
     if (!gpxXml || typeof gpxXml !== 'string') return sendJson(res, 400, { error: 'Missing gpxXml.' });
 
     const originalPoints = parseGpxPoints(gpxXml);
     if (originalPoints.length < 2) return sendJson(res, 400, { error: 'GPX did not contain enough points.' });
 
-    const analysis = await analyzeWithOpenRouteService(originalPoints, profile, apiKey);
-    const unknown = Number(analysis.percentages.unknown) || 0;
+    const analysis = await analyzeWithOpenStreetMap(originalPoints);
     return sendJson(res, 200, {
-      source: 'openrouteservice route surface analysis',
-      confidence: unknown <= 10 ? 'high' : unknown <= 30 ? 'medium' : 'low',
+      source: 'openstreetmap overpass surface analysis',
+      confidence: analysis.confidence,
       percentages: analysis.percentages,
       distanceKm: Math.round(totalDistanceKm(originalPoints) * 10) / 10,
       elevationGainM: calculateFilteredGain(originalPoints),
@@ -310,11 +468,11 @@ module.exports = async function handler(req, res) {
       failedChunks: analysis.failedChunks,
       completedChunks: analysis.completedChunks,
       successfulChunks: analysis.successfulChunks,
-      timedOut: analysis.timedOut,
-      partial: analysis.partial,
+      timedOut: false,
+      partial: analysis.successfulChunks > 0 && analysis.failedChunks > 0,
     });
   } catch (err) {
-    return sendJson(res, 500, { error: err.message || 'Route analysis failed.' });
+    return sendJson(res, 500, { error: err.message || 'OpenStreetMap route analysis failed.' });
   }
 };
 
@@ -329,4 +487,7 @@ module.exports._test = {
   analyzeWithOpenRouteService,
   callOpenRouteService,
   getRuntimeLimits,
+  analyzeWithOpenStreetMap,
+  classifyOsmWay,
+  chooseClassForPoint,
 };
