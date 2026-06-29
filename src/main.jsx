@@ -3020,7 +3020,7 @@ function App() {
           current: 'done',
           completed: ['upload', 'parse', 'elevation', 'done'],
           title: 'GPX loaded',
-          subtitle: 'Distance and elevation are ready. Run surface analysis when you want the surface mix.',
+          subtitle: 'Distance and elevation are ready. Use the terrain estimate or adjust the surface mix manually.',
         }));
       }
     } catch (err) {
@@ -3043,21 +3043,21 @@ function App() {
       setOsmAnalysis(cached);
       setSurfaces(nextSurfaces);
       setLockedSurfaces({});
-      setSurfaceSource('Saved OpenStreetMap route analysis for this GPX');
+      setSurfaceSource('Saved terrain estimate for this GPX');
       setOsmProgress(100);
-      setOsmStatus('Using saved OpenStreetMap surface estimate for this GPX.');
+      setOsmStatus('Using saved terrain estimate for this GPX.');
       setRouteFlow(makeFlow({
         progress: 100,
         current: 'done',
         completed: ['upload', 'parse', 'elevation', 'surfaces', 'done'],
         title: 'Route analysis complete',
-        subtitle: 'Loaded saved OpenStreetMap surface estimate for this GPX',
+        subtitle: 'Loaded saved terrain estimate for this GPX',
       }));
       return;
     }
 
     setIsSurfaceAnalyzing(true);
-    setOsmStatus('Analyzing route surfaces from OpenStreetMap... 0% complete.');
+    setOsmStatus('Estimating route surfaces from the GPX... 0% complete.');
     setOsmProgress(0);
     setOsmAnalysis(null);
     setRouteFlow(makeFlow({
@@ -3065,7 +3065,7 @@ function App() {
       current: 'surfaces',
       completed: ['upload', 'parse', 'elevation'],
       title: 'Analyzing route surfaces',
-      subtitle: 'Matching the GPX track to nearby OpenStreetMap roads and paths',
+      subtitle: 'Creating a fast terrain estimate from the GPX',
     }));
 
     try {
@@ -3073,13 +3073,13 @@ function App() {
         setOsmProgress((current) => {
           const next = Math.min(92, Number(current || 0) + 3);
           const flowProgress = Math.min(96, 72 + Math.round(next * 0.24));
-          setOsmStatus(`Analyzing route surfaces from OpenStreetMap... ${next}% complete.`);
+          setOsmStatus(`Estimating route surfaces from the GPX... ${next}% complete.`);
           setRouteFlow(makeFlow({
             progress: flowProgress,
             current: 'surfaces',
             completed: ['upload', 'parse', 'elevation'],
             title: 'Analyzing route surfaces',
-            subtitle: 'Checking nearby OpenStreetMap roads and paths on the server',
+            subtitle: 'Using GPX metadata, route shape and terrain preset logic',
           }));
           return next;
         });
@@ -3100,20 +3100,20 @@ function App() {
       if (gpxSignature) setCachedOsmByGpx((current) => ({ ...current, [gpxSignature]: analysis }));
       const suggested = suggestRouteModeFromSurfaces(nextSurfaces);
       if (suggested) setRouteMode(suggested);
-      setSurfaceSource('OpenStreetMap / Overpass server analysis');
+      setSurfaceSource('Fast GPX terrain estimate');
       setOsmProgress(100);
       setRouteFlow(makeFlow({
         progress: 100,
         current: 'done',
         completed: ['upload', 'parse', 'elevation', 'surfaces', 'done'],
         title: 'Route analysis complete',
-        subtitle: 'Surface mix updated from OpenStreetMap data',
+        subtitle: 'Surface mix updated from GPX terrain estimate',
       }));
       const confidenceText = analysis.confidence ? ` Confidence: ${analysis.confidence}.` : '';
       const unknown = Math.round(analysis.percentages?.unknown || 0);
       const unknownText = unknown > 15 ? ` ${unknown}% of the route could not be classified from map data, so review the sliders.` : '';
       const failedText = analysis.failedChunks ? ` ${analysis.failedChunks} route sections could not be checked before timeout.` : '';
-      setOsmStatus(`OpenStreetMap surface analysis complete.${confidenceText}${unknownText}${failedText}`);
+      setOsmStatus(`Surface estimate complete.${confidenceText}${unknownText}${failedText}`);
     } catch (err) {
       setOsmProgress(100);
       setRouteFlow(makeFlow({
@@ -3123,7 +3123,7 @@ function App() {
         title: 'Route ready',
         subtitle: 'Surface analysis did not finish, so the current surface estimate was kept.',
       }));
-      setOsmStatus(err.message || 'OpenStreetMap analysis did not finish. TrailPSI kept the current surface estimate so you can continue.');
+      setOsmStatus(err.message || 'Surface estimate did not finish. TrailPSI kept the current surface mix so you can continue.');
     } finally {
       setIsSurfaceAnalyzing(false);
     }
@@ -3256,12 +3256,12 @@ function App() {
         <div className="main-panel">
           <div className="card route-card">
             <h2><Upload size={20} /> Upload GPX or choose terrain type</h2>
-            <p className="helper top-helper">Upload a GPX for distance, climbing and route-shape analysis. Then run route surface analysis or choose a terrain preset manually.</p>
+            <p className="helper top-helper">Upload a GPX for distance and climbing. Then use the fast terrain estimate or adjust the surface mix manually.</p>
             <label className="upload-drop">
               <input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" onChange={handleGpx} />
               <span className="upload-icon"><Upload size={22} /></span>
               <span className="upload-title">Drop a GPX file here or click to browse</span>
-              <span className="upload-copy">TrailPSI reads distance and elevation locally, then checks nearby OpenStreetMap roads and paths for surface tags.</span>
+              <span className="upload-copy">TrailPSI reads distance and elevation locally. Surface mix is estimated quickly and remains editable.</span>
               {selectedFileMeta && <span className="file-chip"><FileText size={14} /> {selectedFileMeta.name} · {formatFileSize(selectedFileMeta.size)}</span>}
             </label>
             <RouteAnalysisProgress flow={routeFlow} fileName={selectedFileMeta?.name} fileSize={selectedFileMeta?.size} />
@@ -3284,18 +3284,18 @@ function App() {
                     <span className="route-analysis-ring" />
                   </div>
                   <div className="route-analysis-copy">
-                    <span className="eyebrow">Road surface analysis</span>
-                    <strong>Analyze the route before calculating pressure</strong>
-                    <p className="muted">TrailPSI checks the GPX track against nearby OpenStreetMap roads and paths and estimates how much of the ride is paved, gravel, rough surface, trail or unknown.</p>
+                    <span className="eyebrow">Surface mix estimate</span>
+                    <strong>Estimate surface mix before calculating pressure</strong>
+                    <p className="muted">TrailPSI creates a fast surface estimate from GPX metadata, route shape and terrain presets. You can fine-tune the sliders before using the pressure result.</p>
                     <div className="analysis-mini-steps">
-                      <span>Match route</span>
-                      <span>Read surfaces</span>
+                      <span>Read GPX</span>
+                      <span>Estimate mix</span>
                       <span>Update pressure</span>
                     </div>
                   </div>
                   <button type="button" className="primary analyze-button" onClick={handleOsmSurfaceAnalysis} disabled={isSurfaceAnalyzing}>
                     <MapPinned size={18} />
-                    <span>{isSurfaceAnalyzing ? 'Analyzing route...' : 'Analyze road surfaces'}</span>
+                    <span>{isSurfaceAnalyzing ? 'Estimating...' : 'Estimate surfaces'}</span>
                   </button>
                 </div>
                 {osmStatus && (
@@ -3306,7 +3306,7 @@ function App() {
                 {osmAnalysis && (
                   <div className="osm-summary">
                     <strong>Surface estimate quality: {osmAnalysis.confidence}</strong>
-                    <p className="muted">Review the surface mix below, especially on private roads, forest roads and new routes.</p>
+                    <p className="muted">This is intentionally editable. Adjust the surface mix below if you know the route better.</p>
                   </div>
                 )}
               </div>
