@@ -280,7 +280,10 @@ async function analyzeWithOpenRouteService(points, profile, apiKey) {
 }
 
 
-// OpenStreetMap / Overpass backend analysis. This replaces the ORS dependency for production.
+
+// OpenStreetMap / Overpass backend analysis. This is the production surface analyzer.
+// It queries a narrow corridor around actual GPX sample points. This is much more reliable
+// than re-routing the GPX through ORS, and much faster than querying large bounding boxes.
 function normalizeOsmValue(value) {
   return String(value || '').toLowerCase().trim().replaceAll(' ', '_');
 }
@@ -291,22 +294,36 @@ function classifyOsmWay(tags = {}) {
   const tracktype = normalizeOsmValue(tags.tracktype);
   const smoothness = normalizeOsmValue(tags.smoothness);
 
-  const paved = new Set(['paved', 'asphalt', 'concrete', 'concrete:lanes', 'concrete:plates', 'paving_stones', 'sett', 'cobblestone']);
-  const hardpack = new Set(['compacted', 'fine_gravel', 'gravel', 'chipseal', 'crushed_limestone']);
-  const loose = new Set(['unpaved', 'ground', 'earth', 'dirt', 'mud', 'sand', 'grass', 'pebblestone', 'rock']);
+  const paved = new Set(['paved', 'asphalt', 'concrete', 'concrete:lanes', 'concrete:plates', 'paving_stones', 'sett', 'cobblestone', 'unhewn_cobblestone', 'metal', 'wood']);
+  const hardpack = new Set(['compacted', 'fine_gravel', 'gravel', 'chipseal', 'crushed_limestone', 'shells']);
+  const loose = new Set(['unpaved', 'ground', 'earth', 'dirt', 'mud', 'sand', 'grass', 'grass_paver', 'pebblestone', 'rock', 'salt', 'snow']);
 
-  if (paved.has(surface)) return { key: 'paved', explicit: true };
-  if (hardpack.has(surface)) return { key: 'hardpack', explicit: true };
-  if (loose.has(surface)) return { key: highway === 'path' ? 'trail' : 'loose', explicit: true };
-  if (['grade1'].includes(tracktype)) return { key: 'hardpack', explicit: true };
-  if (['grade2', 'grade3'].includes(tracktype)) return { key: 'hardpack', explicit: true };
-  if (['grade4', 'grade5'].includes(tracktype)) return { key: 'loose', explicit: true };
-  if (['bad', 'very_bad', 'horrible', 'very_horrible'].includes(smoothness)) return { key: 'loose', explicit: true };
+  if (paved.has(surface)) return { key: 'paved', explicit: true, highway, surface, tracktype };
+  if (hardpack.has(surface)) return { key: 'hardpack', explicit: true, highway, surface, tracktype };
+  if (loose.has(surface)) return { key: highway === 'path' ? 'trail' : 'loose', explicit: true, highway, surface, tracktype };
 
-  if (['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified', 'service', 'living_street', 'cycleway', 'road'].includes(highway)) return { key: 'paved', explicit: false };
-  if (highway === 'track') return { key: 'hardpack', explicit: false };
-  if (['path', 'bridleway', 'footway'].includes(highway)) return { key: 'trail', explicit: false };
-  return { key: 'unknown', explicit: false };
+  if (tracktype === 'grade1') return { key: 'hardpack', explicit: true, highway, surface, tracktype };
+  if (tracktype === 'grade2') return { key: 'hardpack', explicit: true, highway, surface, tracktype };
+  if (['grade3', 'grade4', 'grade5'].includes(tracktype)) return { key: 'loose', explicit: true, highway, surface, tracktype };
+  if (['bad', 'very_bad', 'horrible', 'very_horrible', 'impassable'].includes(smoothness)) {
+    return { key: highway === 'path' ? 'trail' : 'loose', explicit: true, highway, surface, tracktype };
+  }
+
+  // Untagged OSM highways still carry useful information. In many European areas,
+  // highway=track is far more informative than missing surface=*.
+  const normallyPaved = new Set([
+    'motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link',
+    'secondary', 'secondary_link', 'tertiary', 'tertiary_link', 'residential',
+    'living_street', 'service', 'road', 'pedestrian', 'cycleway',
+  ]);
+  if (normallyPaved.has(highway)) return { key: 'paved', explicit: false, highway, surface, tracktype };
+  // highway=unclassified is not always paved on remote gravel/bikepacking routes,
+  // so keep it as hardpack unless surface explicitly says paved.
+  if (highway === 'unclassified') return { key: 'hardpack', explicit: false, highway, surface, tracktype };
+  if (highway === 'track') return { key: 'hardpack', explicit: false, highway, surface, tracktype };
+  if (['path', 'bridleway'].includes(highway)) return { key: 'trail', explicit: false, highway, surface, tracktype };
+  if (['footway', 'steps'].includes(highway)) return { key: 'trail', explicit: false, highway, surface, tracktype };
+  return { key: 'unknown', explicit: false, highway, surface, tracktype };
 }
 
 function metersProject(point, origin) {
@@ -331,54 +348,107 @@ function waySegmentsFromElements(elements = []) {
   const segments = [];
   for (const way of elements) {
     if (way.type !== 'way' || !Array.isArray(way.geometry) || way.geometry.length < 2) continue;
+    if (!way.tags?.highway) continue;
     const classification = classifyOsmWay(way.tags || {});
     for (let i = 1; i < way.geometry.length; i += 1) {
+      const start = { lat: way.geometry[i - 1].lat, lon: way.geometry[i - 1].lon };
+      const end = { lat: way.geometry[i].lat, lon: way.geometry[i].lon };
       segments.push({
-        start: { lat: way.geometry[i - 1].lat, lon: way.geometry[i - 1].lon },
-        end: { lat: way.geometry[i].lat, lon: way.geometry[i].lon },
+        start,
+        end,
         classification,
+        minLat: Math.min(start.lat, end.lat),
+        maxLat: Math.max(start.lat, end.lat),
+        minLon: Math.min(start.lon, end.lon),
+        maxLon: Math.max(start.lon, end.lon),
       });
     }
   }
   return segments;
 }
 
-function chooseClassForPoint(point, segments) {
-  const nearby = segments.map((segment) => ({
-    distance: pointToSegmentMeters(point, segment.start, segment.end),
-    classification: segment.classification,
-  })).filter((item) => item.distance <= 55).sort((a, b) => a.distance - b.distance);
+function chooseClassForPoint(point, segments, radiusM = 85) {
+  const nearby = [];
+  const latPad = radiusM / 111320;
+  const lonPad = radiusM / (111320 * Math.max(0.2, Math.cos((point.lat * Math.PI) / 180)));
 
-  if (!nearby.length) return { key: 'unknown', matched: false };
+  for (const segment of segments) {
+    if (point.lat < segment.minLat - latPad || point.lat > segment.maxLat + latPad) continue;
+    if (point.lon < segment.minLon - lonPad || point.lon > segment.maxLon + lonPad) continue;
+    const distance = pointToSegmentMeters(point, segment.start, segment.end);
+    if (distance <= radiusM) nearby.push({ distance, classification: segment.classification });
+  }
+
+  if (!nearby.length) return { key: 'unknown', matched: false, explicit: false };
+  nearby.sort((a, b) => a.distance - b.distance);
+
   const nearest = nearby[0];
-  const explicitUnpaved = nearby.find((item) => item.classification.explicit && item.classification.key !== 'paved' && item.distance <= 35);
-  const explicitPaved = nearby.find((item) => item.classification.explicit && item.classification.key === 'paved' && item.distance <= 35);
-  const implicitPaved = nearby.find((item) => !item.classification.explicit && item.classification.key === 'paved' && item.distance <= 45);
-  const implicitUnpaved = nearby.find((item) => !item.classification.explicit && item.classification.key !== 'paved' && item.classification.key !== 'unknown' && item.distance <= 40);
+  const explicitPaved = nearby.find((item) => item.classification.explicit && item.classification.key === 'paved' && item.distance <= 70);
+  const explicitUnpaved = nearby.find((item) => item.classification.explicit && item.classification.key !== 'paved' && item.classification.key !== 'unknown' && item.distance <= 75);
+  const implicitTrackOrPath = nearby.find((item) => !item.classification.explicit && ['hardpack', 'loose', 'trail'].includes(item.classification.key) && item.distance <= 70);
+  const implicitPaved = nearby.find((item) => !item.classification.explicit && item.classification.key === 'paved' && item.distance <= 70);
 
-  if (explicitUnpaved && (!explicitPaved || explicitUnpaved.distance + 10 < explicitPaved.distance)) return { ...explicitUnpaved.classification, matched: true };
-  if (explicitPaved && (!explicitUnpaved || explicitPaved.distance <= explicitUnpaved.distance + 10)) return { ...explicitPaved.classification, matched: true };
-  if (implicitUnpaved && (!implicitPaved || implicitUnpaved.distance + 14 < implicitPaved.distance)) return { ...implicitUnpaved.classification, matched: true };
+  // Explicit OSM surface tags beat generic highway guesses, unless they are clearly farther away.
+  if (explicitUnpaved && (!explicitPaved || explicitUnpaved.distance <= explicitPaved.distance + 20)) {
+    if (!implicitPaved || explicitUnpaved.distance <= implicitPaved.distance + 28) return { ...explicitUnpaved.classification, matched: true };
+  }
+  if (explicitPaved && (!explicitUnpaved || explicitPaved.distance <= explicitUnpaved.distance + 12)) return { ...explicitPaved.classification, matched: true };
+
+  // When the GPX is visibly closer to a track/path than a road, trust the track/path.
+  if (implicitTrackOrPath && (!implicitPaved || implicitTrackOrPath.distance + 16 < implicitPaved.distance)) return { ...implicitTrackOrPath.classification, matched: true };
+  if (implicitPaved) return { ...implicitPaved.classification, matched: true };
   if (nearest.classification.key !== 'unknown') return { ...nearest.classification, matched: true };
-  return { key: 'unknown', matched: false };
+  return { key: 'unknown', matched: false, explicit: false };
 }
 
-function makeOverpassQuery(points) {
-  const pad = 0.0022;
-  const lats = points.map((p) => p.lat);
-  const lons = points.map((p) => p.lon);
-  const south = Math.min(...lats) - pad;
-  const north = Math.max(...lats) + pad;
-  const west = Math.min(...lons) - pad;
-  const east = Math.max(...lons) + pad;
-  return `[out:json][timeout:9];(way["highway"](${south.toFixed(6)},${west.toFixed(6)},${north.toFixed(6)},${east.toFixed(6)}););out tags geom;`;
+function samplePointsByDistance(points, targetSpacingM = 1000, maxSamples = 420) {
+  if (points.length <= 2) return points.map((point) => ({ ...point, weightM: 1 }));
+  const distanceKm = totalDistanceKm(points);
+  let spacing = targetSpacingM;
+  if (distanceKm > 800) spacing = 2200;
+  else if (distanceKm > 450) spacing = 1600;
+  else if (distanceKm > 220) spacing = 1000;
+  else if (distanceKm > 80) spacing = 650;
+  else spacing = 350;
+
+  const samples = [{ ...points[0], weightM: spacing }];
+  let lastSample = points[0];
+  let sinceLast = 0;
+  for (let i = 1; i < points.length - 1; i += 1) {
+    sinceLast += haversineMeters(points[i - 1], points[i]);
+    if (sinceLast >= spacing) {
+      samples.push({ ...points[i], weightM: sinceLast });
+      lastSample = points[i];
+      sinceLast = 0;
+    }
+  }
+  const tailDistance = haversineMeters(lastSample, points[points.length - 1]);
+  samples.push({ ...points[points.length - 1], weightM: Math.max(1, sinceLast + tailDistance) });
+
+  if (samples.length <= maxSamples) return samples;
+  const step = (samples.length - 1) / (maxSamples - 1);
+  return Array.from({ length: maxSamples }, (_, index) => samples[Math.round(index * step)]);
 }
 
-async function fetchOverpass(points, timeoutMs = 9500) {
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
+
+function makeOverpassAroundQuery(points, radiusM = 90) {
+  const aroundQueries = points.map((point) => `way(around:${radiusM},${point.lat.toFixed(6)},${point.lon.toFixed(6)})["highway"];`).join('\n');
+  return `[out:json][timeout:18];(\n${aroundQueries}\n);out tags geom qt;`;
+}
+
+async function fetchOverpassAround(points, timeoutMs = 18000) {
   const endpoints = [
     'https://overpass.kumi.systems/api/interpreter',
     'https://overpass-api.de/api/interpreter',
+    'https://z.overpass-api.de/api/interpreter',
+    'https://overpass.openstreetmap.ru/api/interpreter',
   ];
+  const query = makeOverpassAroundQuery(points);
   let lastError;
   for (const endpoint of endpoints) {
     const controller = new AbortController();
@@ -388,7 +458,7 @@ async function fetchOverpass(points, timeoutMs = 9500) {
         method: 'POST',
         signal: controller.signal,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-        body: new URLSearchParams({ data: makeOverpassQuery(points) }).toString(),
+        body: new URLSearchParams({ data: query }).toString(),
       });
       const text = await response.text();
       if (!response.ok) throw new Error(`OpenStreetMap request failed (${response.status})`);
@@ -402,46 +472,86 @@ async function fetchOverpass(points, timeoutMs = 9500) {
   throw lastError || new Error('OpenStreetMap analysis failed.');
 }
 
-function osmPercentagesFromCounts(counts) {
+function osmPercentagesFromWeightedCounts(counts) {
   const keys = ['paved', 'hardpack', 'loose', 'trail', 'unknown'];
-  const total = keys.reduce((sum, key) => sum + (counts[key] || 0), 0);
+  const total = keys.reduce((sum, key) => sum + (Number(counts[key]) || 0), 0);
   if (!total) return { paved: 0, hardpack: 0, loose: 0, trail: 0, unknown: 100 };
-  const percentages = Object.fromEntries(keys.map((key) => [key, Math.round(((counts[key] || 0) / total) * 1000) / 10]));
+  const percentages = Object.fromEntries(keys.map((key) => [key, Math.round(((Number(counts[key]) || 0) / total) * 1000) / 10]));
   const sum = keys.reduce((acc, key) => acc + percentages[key], 0);
   percentages.unknown = Math.round((percentages.unknown + (100 - sum)) * 10) / 10;
   return percentages;
 }
 
 async function analyzeWithOpenStreetMap(points) {
-  const sampled = samplePointsForRouting(points);
-  const chunks = chunkPoints(sampled, 28).slice(0, 18);
+  const samples = samplePointsByDistance(points);
+  const chunks = chunkArray(samples, 18);
   const counts = { paved: 0, hardpack: 0, loose: 0, trail: 0, unknown: 0 };
+  const limits = {
+    maxConcurrency: Math.max(1, Math.min(4, envNumber('TRAILPSI_OVERPASS_CONCURRENCY', 3))),
+    chunkTimeoutMs: envNumber('TRAILPSI_OVERPASS_CHUNK_TIMEOUT_MS', 18000),
+    globalTimeoutMs: envNumber('TRAILPSI_OVERPASS_GLOBAL_TIMEOUT_MS', 52000),
+  };
+  const deadline = Date.now() + limits.globalTimeoutMs;
+  let nextIndex = 0;
   let successfulChunks = 0;
   let failedChunks = 0;
-  for (const chunk of chunks) {
-    try {
-      const data = await fetchOverpass(chunk);
-      const segments = waySegmentsFromElements(data.elements || []);
-      for (const point of chunk) {
-        const chosen = chooseClassForPoint(point, segments);
-        counts[chosen.key || 'unknown'] += 1;
-      }
-      successfulChunks += 1;
-    } catch (_err) {
-      failedChunks += 1;
-      for (const _point of chunk) counts.unknown += 1;
+  let matchedWeight = 0;
+  let explicitWeight = 0;
+  let checkedWeight = 0;
+  let completedChunks = 0;
+
+  async function analyzeChunk(index) {
+    const chunk = chunks[index];
+    const remainingMs = deadline - Date.now();
+    if (remainingMs < 2500) throw new Error('OpenStreetMap analysis deadline reached');
+    const data = await fetchOverpassAround(chunk, Math.min(limits.chunkTimeoutMs, remainingMs - 500));
+    const segments = waySegmentsFromElements(data.elements || []);
+    if (!segments.length) throw new Error('No nearby OSM ways returned');
+    for (const point of chunk) {
+      const weight = Math.max(1, Number(point.weightM) || 1);
+      const chosen = chooseClassForPoint(point, segments, 95);
+      counts[chosen.key || 'unknown'] += weight;
+      checkedWeight += weight;
+      if (chosen.matched) matchedWeight += weight;
+      if (chosen.explicit) explicitWeight += weight;
     }
   }
-  const percentages = osmPercentagesFromCounts(counts);
-  const unknown = Number(percentages.unknown) || 0;
+
+  async function worker() {
+    while (nextIndex < chunks.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        await analyzeChunk(index);
+        successfulChunks += 1;
+      } catch (_err) {
+        failedChunks += 1;
+        for (const point of chunks[index]) counts.unknown += Math.max(1, Number(point.weightM) || 1);
+      } finally {
+        completedChunks += 1;
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limits.maxConcurrency, chunks.length) }, () => worker()));
+
+  const percentages = osmPercentagesFromWeightedCounts(counts);
+  const matchedPercent = checkedWeight ? Math.round((matchedWeight / checkedWeight) * 1000) / 10 : 0;
+  const explicitPercent = matchedWeight ? Math.round((explicitWeight / matchedWeight) * 1000) / 10 : 0;
+  let confidence = 'low';
+  if (successfulChunks > 0 && matchedPercent >= 70 && (percentages.unknown || 0) <= 20 && failedChunks <= Math.ceil(chunks.length * 0.15)) confidence = 'good';
+  else if (successfulChunks > 0 && matchedPercent >= 45 && (percentages.unknown || 0) <= 45) confidence = 'medium';
+
   return {
     percentages,
-    sampledPoints: sampled.length,
+    sampledPoints: samples.length,
     chunkCount: chunks.length,
-    completedChunks: chunks.length,
+    completedChunks,
     successfulChunks,
     failedChunks,
-    confidence: successfulChunks === 0 ? 'low' : unknown <= 15 ? 'medium' : 'low',
+    confidence,
+    matchedPercent,
+    explicitPercent,
   };
 }
 
@@ -491,3 +601,6 @@ module.exports._test = {
   classifyOsmWay,
   chooseClassForPoint,
 };
+
+// Ask Vercel for enough time to complete multi-section OSM analysis.
+module.exports.config = { maxDuration: 60 };
