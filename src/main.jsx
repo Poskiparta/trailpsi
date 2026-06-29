@@ -3043,47 +3043,46 @@ function App() {
       setOsmAnalysis(cached);
       setSurfaces(nextSurfaces);
       setLockedSurfaces({});
-      setSurfaceSource('Saved map-matched route analysis for this GPX');
+      setSurfaceSource('Saved OpenStreetMap route analysis for this GPX');
       setOsmProgress(100);
-      setOsmStatus('Using saved map-matched surface estimate for this GPX.');
+      setOsmStatus('Using saved OpenStreetMap surface estimate for this GPX.');
       setRouteFlow(makeFlow({
         progress: 100,
         current: 'done',
         completed: ['upload', 'parse', 'elevation', 'surfaces', 'done'],
         title: 'Route analysis complete',
-        subtitle: 'Loaded saved surface estimate for this GPX',
+        subtitle: 'Loaded saved OpenStreetMap surface estimate for this GPX',
       }));
       return;
     }
 
     setIsSurfaceAnalyzing(true);
-    setOsmStatus('Analyzing route surfaces...');
-    setOsmProgress(70);
+    setOsmStatus('Analyzing route surfaces from OpenStreetMap... 0% complete.');
+    setOsmProgress(0);
     setOsmAnalysis(null);
     setRouteFlow(makeFlow({
       progress: 72,
       current: 'surfaces',
       completed: ['upload', 'parse', 'elevation'],
       title: 'Analyzing route surfaces',
-      subtitle: 'Matching the GPX against openrouteservice surface data',
+      subtitle: 'Matching the GPX track to nearby OpenStreetMap roads and paths',
     }));
 
-    let fakeProgress = 72;
-    const progressTimer = window.setInterval(() => {
-      fakeProgress = Math.min(94, fakeProgress + Math.max(1, Math.round((94 - fakeProgress) * 0.18)));
-      setOsmProgress(fakeProgress);
-      setRouteFlow(makeFlow({
-        progress: fakeProgress,
-        current: 'surfaces',
-        completed: ['upload', 'parse', 'elevation'],
-        title: 'Analyzing route surfaces',
-        subtitle: 'Long routes can take a little longer',
-      }));
-    }, 850);
-
     try {
-      const analysis = await fetchMapMatchedSurfaces(gpx.xml);
-      window.clearInterval(progressTimer);
+      const analysis = await fetchAndAnalyzeOverpassSurfaces(gpx.points, (completed, total) => {
+        const percent = Math.round((completed / Math.max(1, total)) * 100);
+        setOsmProgress(percent);
+        const flowProgress = Math.min(96, 72 + Math.round(percent * 0.24));
+        setOsmStatus(`Analyzing route surfaces from OpenStreetMap... ${percent}% complete.`);
+        setRouteFlow(makeFlow({
+          progress: flowProgress,
+          current: 'surfaces',
+          completed: ['upload', 'parse', 'elevation'],
+          title: 'Analyzing route surfaces',
+          subtitle: `${completed}/${total} route sections checked from OpenStreetMap`,
+        }));
+      }, surfaces);
+
       const nextSurfaces = cleanSurfaceMix(Object.fromEntries(
         Object.entries(analysis.percentages).map(([key, value]) => [key, String(Math.round(value))])
       ));
@@ -3093,22 +3092,21 @@ function App() {
       if (gpxSignature) setCachedOsmByGpx((current) => ({ ...current, [gpxSignature]: analysis }));
       const suggested = suggestRouteModeFromSurfaces(nextSurfaces);
       if (suggested) setRouteMode(suggested);
-      setSurfaceSource(analysis.source || 'Map-matched route analysis');
+      setSurfaceSource('OpenStreetMap GPX-nearby road/path analysis');
       setOsmProgress(100);
       setRouteFlow(makeFlow({
         progress: 100,
         current: 'done',
         completed: ['upload', 'parse', 'elevation', 'surfaces', 'done'],
         title: 'Route analysis complete',
-        subtitle: 'Surface mix updated from route data',
+        subtitle: 'Surface mix updated from OpenStreetMap data',
       }));
       const confidenceText = analysis.confidence ? ` Confidence: ${analysis.confidence}.` : '';
       const unknown = Math.round(analysis.percentages?.unknown || 0);
       const unknownText = unknown > 15 ? ` ${unknown}% of the route could not be classified from map data, so review the sliders.` : '';
-      const partialText = analysis.partial ? ' Some route sections could not be checked before the timeout, so this is a partial estimate.' : '';
-      setOsmStatus(`Route surface analysis complete.${confidenceText}${unknownText}${partialText}`);
+      const failedText = analysis.failedChunks ? ` ${analysis.failedChunks} route sections could not be checked before timeout.` : '';
+      setOsmStatus(`OpenStreetMap surface analysis complete.${confidenceText}${unknownText}${failedText}`);
     } catch (err) {
-      window.clearInterval(progressTimer);
       setOsmProgress(100);
       setRouteFlow(makeFlow({
         progress: 100,
@@ -3117,7 +3115,7 @@ function App() {
         title: 'Route ready',
         subtitle: 'Surface analysis did not finish, so the current surface estimate was kept.',
       }));
-      setOsmStatus(err.message || 'Surface analysis did not finish. TrailPSI kept the current surface estimate so you can continue.');
+      setOsmStatus(err.message || 'OpenStreetMap analysis did not finish. TrailPSI kept the current surface estimate so you can continue.');
     } finally {
       setIsSurfaceAnalyzing(false);
     }
@@ -3255,7 +3253,7 @@ function App() {
               <input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" onChange={handleGpx} />
               <span className="upload-icon"><Upload size={22} /></span>
               <span className="upload-title">Drop a GPX file here or click to browse</span>
-              <span className="upload-copy">TrailPSI reads distance and elevation locally, then can analyze surfaces through the route analysis endpoint.</span>
+              <span className="upload-copy">TrailPSI reads distance and elevation locally, then checks nearby OpenStreetMap roads and paths for surface tags.</span>
               {selectedFileMeta && <span className="file-chip"><FileText size={14} /> {selectedFileMeta.name} · {formatFileSize(selectedFileMeta.size)}</span>}
             </label>
             <RouteAnalysisProgress flow={routeFlow} fileName={selectedFileMeta?.name} fileSize={selectedFileMeta?.size} />
@@ -3280,7 +3278,7 @@ function App() {
                   <div className="route-analysis-copy">
                     <span className="eyebrow">Road surface analysis</span>
                     <strong>Analyze the route before calculating pressure</strong>
-                    <p className="muted">TrailPSI checks the GPX against openrouteservice road data and estimates how much of the ride is paved, gravel, rough surface, trail or unknown.</p>
+                    <p className="muted">TrailPSI checks the GPX track against nearby OpenStreetMap roads and paths and estimates how much of the ride is paved, gravel, rough surface, trail or unknown.</p>
                     <div className="analysis-mini-steps">
                       <span>Match route</span>
                       <span>Read surfaces</span>
